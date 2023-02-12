@@ -100,4 +100,8 @@ public class MemberService {
         String token = JwtTokenUtil.createToken(member.getUserName(),this.tokenKey,this.expireTimeMs);
         return token;
     }
+
+    public boolean idCheckDto(String userName) {
+        return this.memberRepository.existsByUserName(userName);
+    }
 }
