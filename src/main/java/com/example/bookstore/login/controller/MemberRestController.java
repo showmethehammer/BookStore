@@ -63,7 +63,7 @@ public class MemberRestController {
      * @return
      */
     @PostMapping("/api/member/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto, Errors errors){
+    public ResponseEntity<?> login(@RequestBody @Valid LoginDto loginDto, Errors errors){
         if(errors.hasErrors()){
             List<ObjectError> error = errors.getAllErrors();
             throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
@@ -79,7 +79,7 @@ public class MemberRestController {
      * @return
      */
     @PostMapping("/api/member/idcheck")
-    public ResponseEntity<?> idCheck (@RequestBody IdCheckDto idCheckDto, Errors errors){
+    public ResponseEntity<?> idCheck (@RequestBody @Valid IdCheckDto idCheckDto, Errors errors){
         if(errors.hasErrors()){
             List<ObjectError> error = errors.getAllErrors();
             throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
@@ -89,5 +89,13 @@ public class MemberRestController {
         }
         return ResponseEntity.ok().body("사용할 수 있는 ID입니다.");
     }
+
+    @PostMapping("/test")
+    public ResponseEntity<?> test(Authentication authentication){
+
+        return ResponseEntity.ok().body(memberService.test());
+    }
+
+
 
 }
