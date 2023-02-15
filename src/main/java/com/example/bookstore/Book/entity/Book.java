@@ -1,10 +1,7 @@
 package com.example.bookstore.Book.entity;
 
 import com.sun.istack.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -13,6 +10,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Book {
@@ -25,6 +23,7 @@ public class Book {
     private String contents;                        // 도서 소개
     @NotNull
     private String url;                             // 도서 상세 URL
+    @NotNull
     private String isbn;                            // 국제 표준 도서 번호
     @NotNull
     private String datetime;                 // 출판일자
@@ -40,6 +39,7 @@ public class Book {
     private Integer sale_price;                     // 도서 판매가
     @NotNull
     private String thumbnail;                       // 도서 표지 미리보기 URL
+    private String status;                          // 판매 상태
     private Integer statusEa;                        // 제고량
     private Integer sale;                           // 할인가
 }

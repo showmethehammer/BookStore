@@ -1,14 +1,9 @@
 package com.example.bookstore.Book.service;
 
-import com.example.bookstore.Book.Dto.BookStatusDto;
-import com.example.bookstore.Book.Dto.CommentAddDto;
-import com.example.bookstore.Book.Dto.CommentDelDto;
-import com.example.bookstore.Book.Dto.CommentUpdateDto;
+import com.example.bookstore.Book.Dto.*;
 import com.example.bookstore.Book.entity.Book;
 import com.example.bookstore.Book.entity.Comment;
-import com.example.bookstore.Book.exception.CommentErrorCode;
-import com.example.bookstore.Book.exception.CommentException;
-import com.example.bookstore.Book.exception.PageOrCountDto;
+import com.example.bookstore.Book.exception.*;
 import com.example.bookstore.Book.repository.BookRepository;
 import com.example.bookstore.Book.repository.CommentRepository;
 import com.example.bookstore.Book.search.BookSearchType;
@@ -19,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.SpringApplicationEvent;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -63,6 +57,13 @@ public class BookService {
         if (page < 1) {
             page = 1;
         }
+        // 일년번호 기준일 경우
+        if(sort == 2){
+            if(query.indexOf(" ") >= 0) {
+                String isbnCh = query.substring(0, query.indexOf(" ") - 1);
+                query = isbnCh;
+            }
+        }
         // 검색순서 1. 검색어 일치기준   2. 출판일 기준   그외. 검색어 일치 기준
         String sortSt = BookSearchType.sort(sort);
         // 검색Type 1. 제목   2. 국제표증 등록번호
@@ -86,6 +87,89 @@ public class BookService {
         return restTemplate.exchange(targetUrl, HttpMethod.GET, httpEntity, Map.class);
     }
 
+
+    /**
+     * 책 등록 및 Update
+     * Api로 불러와서 처리하는 상황에서 creat와 update가 동일할것이라고 판단해
+     * create는 만들지 안음.
+     * @param bookUpdateDto
+     * @return
+     */
+    public ResponseEntity<?> bookUpdate(BookUpdateDto bookUpdateDto) {
+        // 책을 검색
+        Optional<Book> opBook = bookRepository.findByIsbnContaining(bookUpdateDto.getIsbn());
+        // 할인율 변환
+        Integer Sale = Integer.parseInt(bookUpdateDto.getSale());
+        // 수량 변환
+        Integer statusEa = Integer.parseInt(bookUpdateDto.getStatusEa());
+        if(Sale == null ||  Sale < 0 || Sale > 100) {
+            throw new BookException(BookErrorCode.BOOK_NOT_SALE_NUMBER_ERROR);
+        }
+        if(statusEa == null || statusEa < 0){
+            throw new BookException(BookErrorCode.BOOK_NOT_COUNT_MINUS_ERROR);
+        }
+        if (!opBook.isEmpty()) {
+            Book book = opBook.get();
+            book.setStatusEa(statusEa);
+            book.setSale(Sale);
+            book.setSale_price((book.getPrice()
+                    - ((book.getPrice() * book.getSale())/100)));
+            bookRepository.save(book);
+
+        } else {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.set("Authorization", "KakaoAK " + KaKaoKey);
+            HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
+            URI targetUrl = UriComponentsBuilder
+                    .fromUriString(url)
+                    .queryParam("query", bookUpdateDto.getIsbn())
+                    .queryParam("target", BookSearchType.bookType(2))
+                    .build()
+                    .encode(StandardCharsets.UTF_8)
+                    .toUri();
+            ResponseEntity<Map> bookData = restTemplate.exchange(targetUrl, HttpMethod.GET, httpEntity, Map.class);
+
+            JSONObject jObj = new JSONObject(bookData.getBody());
+            JSONArray memberArray = jObj.getJSONArray("documents");
+            if(memberArray.length() == 0){
+                throw new BookException(BookErrorCode.BOOK_NOT_FOUND_ERROR);
+            }
+            Book[] book = new Book[memberArray.length()];
+            System.out.println("=====Members=====");
+            String authors = "";
+            String translators = "";
+            for (int i = 0; i < memberArray.length(); i++) {
+                JSONObject tempObj = (JSONObject) memberArray.get(i);
+                authors = tempObj.get("authors").toString();
+                translators = tempObj.get("translators").toString();
+                book[i] = Book.builder()
+                        .title((String)tempObj.get("title"))
+                        .contents((String)tempObj.get("contents"))
+                        .url((String)tempObj.get("url"))
+                        .isbn((String)tempObj.get("isbn"))
+                        .datetime((String)tempObj.get("datetime"))
+                        .authors(authors)
+                        .publisher((String)tempObj.get("publisher"))
+                        .translators(translators)
+                        .price((Integer)tempObj.get("price"))
+                        .sale_price(((Integer)tempObj.get("price")
+                                - ((Integer)tempObj.get("price")
+                                * Sale)/100))
+                        .thumbnail((String)tempObj.get("thumbnail"))
+                        .statusEa(statusEa)
+                        .sale(Sale)
+                        .build();
+            }
+            bookRepository.save(book[0]);
+        }
+        return ResponseEntity.ok().body("책등록을 완료하였습니다.");
+    }
+
+
+
+
+
     /**
      * 국제표준 등록번호를 이용하여 DataBase에입력해 서치가 되면 서치된 값을 반환
      * 시착 안되면 API에 검색해서 반환
@@ -95,6 +179,13 @@ public class BookService {
      * @return
      */
     public ResponseEntity<?> bookStatus(String isbn) {
+        // 띄어쓰기가 있을시 API 호출이 안되는것을 확인하였고 국제호출번호를 따지면 2가지가 API로 받기때문에,
+        // 2가지중에 한가지만 입력을 받으면 되는상황이어 띄어쓰기가 있을때 2가지를 입력했다고 판단하여, 첫번째 띄어쓰기 전까지만 읽어
+        // 검색하는것을 구현
+        if(isbn.indexOf(" ") >= 0) {
+            String isbnCh = isbn.substring(0, isbn.indexOf(" "));
+            isbn = isbnCh;
+        }
         Optional<Book> opBook = bookRepository.findByIsbnContaining(isbn);
         if (!opBook.isEmpty()) {
             Book book = opBook.get();
@@ -159,7 +250,6 @@ public class BookService {
             List<Comment> commentList = commentRepository.findByIsbnContaining(isbn);
             map.put("book",bookStatusDtos[0]);
             map.put("commentList",commentList);
-
             return ResponseEntity.ok().body(map);
         }
     }
@@ -254,4 +344,6 @@ public class BookService {
         map.put("pageOrCount",pageOrCountDto);
         return ResponseEntity.ok().body(map);
     }
+
+
 }
