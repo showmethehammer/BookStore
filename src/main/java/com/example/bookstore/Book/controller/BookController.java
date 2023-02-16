@@ -1,42 +1,41 @@
 package com.example.bookstore.Book.controller;
 
-import com.example.bookstore.Book.Dto.BookSearchDto;
-import com.example.bookstore.Book.Dto.CommentAddDto;
-import com.example.bookstore.Book.Dto.CommentDelDto;
-import com.example.bookstore.Book.Dto.CommentUpdateDto;
+import com.example.bookstore.Book.Dto.*;
 import com.example.bookstore.Book.service.BookService;
 import com.example.bookstore.login.exception.BookUserException;
-import com.example.bookstore.login.exception.MemberException;
 import com.example.bookstore.login.exception.UserErrorCode;
 import com.example.bookstore.login.exception.ValidException;
 import com.example.bookstore.login.service.MemberService;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 
 import javax.validation.Valid;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
+@Slf4j
 public class BookController {
 
 
     private final BookService bookService;
     private final MemberService memberService;
+
+
+    @PostMapping("/api/book/update")
+    public ResponseEntity<?> bookUpdate(@RequestBody @Valid BookUpdateDto bookCreateDto , Errors errors){
+        if(errors.hasErrors()){
+            List<ObjectError> error = errors.getAllErrors();
+            throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
+        }
+        return bookService.bookUpdate(bookCreateDto);
+    }
 
     /**
      * 책 검색용 API
@@ -54,11 +53,11 @@ public class BookController {
     }
 
     /**
-     * 잭을 선택하여 상세정보를 확인하기 위한 용도
+     *  잭을 선택하여 상세정보를 확인하기 위한 용도
      *  책 검색용 API에서 리스트가 나오면 한가지를 클릭하면 이벤트로
      *  국제표준 일년번호가 들어가 상세정보를 보내는 것을 그리며 구현
      *
-     * @param isbn 국제표중 등록번호 입력
+     * @param isbn 국제표준 등록번호 입력
      * @return 등록번호에 맞는 Data 반환
      */
     @GetMapping("/api/book/status/{isbn}")

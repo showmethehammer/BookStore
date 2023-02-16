@@ -14,7 +14,8 @@ public enum UserErrorCode {
     USER_ON_AUTH_ERROR("인증된 ID 입니다."),
     USER_ID_EXIST_ERROR("중복된 ID가 있습니다."),
     USER_ID_EMAIL_FOUND_ERROR("ID와 Email이 일치 하지 않습니다."),
-    USER_NOT_TOKEN_NUMBER("Token이 유효하지 않습니다.");
+    USER_NOT_TOKEN_NUMBER("Token이 유효하지 않습니다."),
+    USER_ID_NOT_EXIST("아이디가 존재하지 않습니다.");
 
     private final String description;
 }

@@ -95,7 +95,4 @@ public class MemberRestController {
 
         return ResponseEntity.ok().body(memberService.test());
     }
-
-
-
 }
