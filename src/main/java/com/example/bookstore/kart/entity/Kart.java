@@ -20,7 +20,7 @@ public class Kart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     @NotNull
-    private String userId;              // userId
+    private String userName;              // userId
     @NotNull
     private String title;               // 제목
     @NotNull

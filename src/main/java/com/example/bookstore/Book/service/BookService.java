@@ -96,8 +96,14 @@ public class BookService {
      * @return
      */
     public ResponseEntity<?> bookUpdate(BookUpdateDto bookUpdateDto) {
+        String isbn;
+        if(bookUpdateDto.getIsbn().indexOf(" ") >= 0) {
+            isbn = bookUpdateDto.getIsbn().substring(0, bookUpdateDto.getIsbn().indexOf(" "));
+        }else{
+            isbn = bookUpdateDto.getIsbn();
+        }
         // 책을 검색
-        Optional<Book> opBook = bookRepository.findByIsbnContaining(bookUpdateDto.getIsbn());
+        Optional<Book> opBook = bookRepository.findByIsbnContaining(isbn);
         // 할인율 변환
         Integer Sale = Integer.parseInt(bookUpdateDto.getSale());
         // 수량 변환
@@ -115,7 +121,6 @@ public class BookService {
             book.setSale_price((book.getPrice()
                     - ((book.getPrice() * book.getSale())/100)));
             bookRepository.save(book);
-
         } else {
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders httpHeaders = new HttpHeaders();
@@ -123,7 +128,7 @@ public class BookService {
             HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
             URI targetUrl = UriComponentsBuilder
                     .fromUriString(url)
-                    .queryParam("query", bookUpdateDto.getIsbn())
+                    .queryParam("query", isbn)
                     .queryParam("target", BookSearchType.bookType(2))
                     .build()
                     .encode(StandardCharsets.UTF_8)
@@ -165,9 +170,6 @@ public class BookService {
         }
         return ResponseEntity.ok().body("책등록을 완료하였습니다.");
     }
-
-
-
 
 
     /**

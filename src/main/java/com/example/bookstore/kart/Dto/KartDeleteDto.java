@@ -6,14 +6,12 @@ import javax.validation.constraints.NotNull;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class KartSaleUpdateDto {
+@AllArgsConstructor
+@NoArgsConstructor
+public class KartDeleteDto {
     @NotNull(message = "ID는 필수 항목 입니다.")
     private String username;              // userId
     @NotNull(message = "국제 일년번호는 필수 항목 입니다.")
     private String isbn;                // 국제 일년번호
-    @NotNull(message = "할인율은 필수 항목 입니다.")
-    private String sale;                  // 구매 수량
 }
