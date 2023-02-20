@@ -29,7 +29,8 @@ public class SecurityConfig {
                 .cors().and()
                 .authorizeRequests()
                 .antMatchers("/api/member/**").permitAll()
-                .antMatchers(HttpMethod.POST,"/test").authenticated()
+                .antMatchers(HttpMethod.POST,"/test"
+                ,"/api/kart/**").authenticated()
                 .and()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

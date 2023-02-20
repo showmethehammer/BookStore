@@ -35,7 +35,7 @@ public class BookService {
     private final CommentRepository commentRepository;
 
     // 카카오 라이센스
-    @Value("${kokoao.api.key}")
+    @Value("${kakao.api.key}")
     private String KaKaoKey;
     // 카카오 API검색 기본주소
     private String url = "https://dapi.kakao.com/v3/search/book";
@@ -43,6 +43,10 @@ public class BookService {
 
     /**
      * 책 검색용 API
+     * step
+     * 1. 검색 Data 검열
+     * 2. 검색
+     * 3. 결과 리턴.
      * @param query     검색어
      * @param page      검색 List page 10권씩 끊어서 보냄
      * @param bookType  검색종류
@@ -53,6 +57,7 @@ public class BookService {
                                           Integer bookType, Integer sort) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
+        // 1. Data 검열
         // 페이지를 잘못 입력한 경우 1로 변경
         if (page < 1) {
             page = 1;
@@ -69,6 +74,8 @@ public class BookService {
         // 검색Type 1. 제목   2. 국제표증 등록번호
         //         3. 출판사  4. 사람이름    그외. 제목
         String bookTypeSt = BookSearchType.bookType(bookType);
+
+        // 2. 검색
         // 카카오 API 라이센스
         httpHeaders.set("Authorization", "KakaoAK " + KaKaoKey);
         // 검색해서 나온값을 담아줌.
@@ -83,6 +90,8 @@ public class BookService {
                 .build()
                 .encode(StandardCharsets.UTF_8)
                 .toUri();
+
+        // 결과 리턴
         // 담은 값을 출력함.
         return restTemplate.exchange(targetUrl, HttpMethod.GET, httpEntity, Map.class);
     }
@@ -92,18 +101,24 @@ public class BookService {
      * 책 등록 및 Update
      * Api로 불러와서 처리하는 상황에서 creat와 update가 동일할것이라고 판단해
      * create는 만들지 안음.
+     *
+     * Step
+     * 1. Data 검열
+     * 2. DataBase에 있으면 불러와서 수정, 없으면 카카오API로 호출하여 등록
+     * 3. 저장
+     *
      * @param bookUpdateDto
      * @return
      */
     public ResponseEntity<?> bookUpdate(BookUpdateDto bookUpdateDto) {
         String isbn;
+        // 1. Data 검열
+        // 일년번호 필터링
         if(bookUpdateDto.getIsbn().indexOf(" ") >= 0) {
             isbn = bookUpdateDto.getIsbn().substring(0, bookUpdateDto.getIsbn().indexOf(" "));
         }else{
             isbn = bookUpdateDto.getIsbn();
         }
-        // 책을 검색
-        Optional<Book> opBook = bookRepository.findByIsbnContaining(isbn);
         // 할인율 변환
         Integer Sale = Integer.parseInt(bookUpdateDto.getSale());
         // 수량 변환
@@ -114,12 +129,17 @@ public class BookService {
         if(statusEa == null || statusEa < 0){
             throw new BookException(BookErrorCode.BOOK_NOT_COUNT_MINUS_ERROR);
         }
+        // 2. DataBase에 있으면 불러와서 수정, 없으면 카카오API로 호출하여 등록
+        // DataBase에서 책 검색
+        Optional<Book> opBook = bookRepository.findByIsbnContaining(isbn);
+        // DataBase에 책이 있을경우 DataBase값의 Data를 변경, 없으면 API로 불러와서 Data변경
         if (!opBook.isEmpty()) {
             Book book = opBook.get();
             book.setStatusEa(statusEa);
             book.setSale(Sale);
             book.setSale_price((book.getPrice()
                     - ((book.getPrice() * book.getSale())/100)));
+            // 3. 저장
             bookRepository.save(book);
         } else {
             RestTemplate restTemplate = new RestTemplate();
@@ -166,6 +186,7 @@ public class BookService {
                         .sale(Sale)
                         .build();
             }
+            // 3. 저장
             bookRepository.save(book[0]);
         }
         return ResponseEntity.ok().body("책등록을 완료하였습니다.");
@@ -176,6 +197,10 @@ public class BookService {
      * 국제표준 등록번호를 이용하여 DataBase에입력해 서치가 되면 서치된 값을 반환
      * 시착 안되면 API에 검색해서 반환
      * 댓글도 함깨 검색해서 함깨 반환
+     *
+     * Step
+     * 1. 검색
+     * 2. 객체에 정리하여 반환.
      *
      * @param isbn 국제 표준 등록번호 입력
      * @return
@@ -188,12 +213,14 @@ public class BookService {
             String isbnCh = isbn.substring(0, isbn.indexOf(" "));
             isbn = isbnCh;
         }
+        // 1. 검색
         Optional<Book> opBook = bookRepository.findByIsbnContaining(isbn);
         if (!opBook.isEmpty()) {
             Book book = opBook.get();
             if(book.getSale() <= 0 || book.getSale() == null){
                 book.setSale(0);
             }
+            // 2_1. 객체를 정리하여 반환
             return ResponseEntity.ok().body(BookStatusDto.builder()
                     .title(book.getTitle())
                     .contents(book.getContents())
@@ -209,6 +236,7 @@ public class BookService {
                     .statusEa(book.getStatusEa())
                     .build());
         } else {
+            // 2_2. 객체를 정리하여 반환
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.set("Authorization", "KakaoAK " + KaKaoKey);

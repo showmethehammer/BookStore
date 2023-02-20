@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Member {
     @Column(columnDefinition = "VARCHAR(20) NOT NULL")
-    String userName;
+    private String userName;
+    private Long userMoney;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -37,6 +38,4 @@ public class Member {
     private String addressData1;
     private String address2;
     private String addressData2;
-
-
 }

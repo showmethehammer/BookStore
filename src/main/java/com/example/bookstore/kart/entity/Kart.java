@@ -7,6 +7,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -29,6 +30,7 @@ public class Kart {
     private String thumbnail;           // 표지 URL
     @NotNull
     private Integer ea;                  // 구매 수량
+    private LocalDateTime regDateTime;     //
     @NotNull
     private Integer price;                //  구매 가격
     private Integer sale_price;           //  할인 적용가
@@ -36,4 +38,6 @@ public class Kart {
     private Integer sale;                 // 할인율
     @NotNull
     private String authors;               // 저자
+    @NotNull
+    private boolean buyOx;                // 구입여부
 }

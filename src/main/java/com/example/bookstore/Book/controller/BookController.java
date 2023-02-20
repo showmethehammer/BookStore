@@ -28,17 +28,9 @@ public class BookController {
     private final MemberService memberService;
 
 
-    @PostMapping("/api/book/update")
-    public ResponseEntity<?> bookUpdate(@RequestBody @Valid BookUpdateDto bookCreateDto , Errors errors){
-        if(errors.hasErrors()){
-            List<ObjectError> error = errors.getAllErrors();
-            throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
-        }
-        return bookService.bookUpdate(bookCreateDto);
-    }
-
     /**
      * 책 검색용 API
+     * 책을 검색하기 위한 메소드
      * @param query     책제목
      * @param page      검색페이지 기본 10개씩
      * @param bookType  검색 종류
@@ -51,6 +43,24 @@ public class BookController {
         ResponseEntity<Map> result = bookService.bookSearch(query,page,bookType,sort);
         return result.getBody();
     }
+
+
+    /**
+     * 등록된 책의 수량, 할인율 수정
+     * 책 일년번호, 수량, 할인율을 받아서 내용 Update;
+     * @param bookCreateDto 일년번호, 수량, 할인율을 가지고 있는 객체
+     * @param errors
+     * @return
+     */
+    @PostMapping("/api/book/update")
+    public ResponseEntity<?> bookUpdate(@RequestBody @Valid BookUpdateDto bookCreateDto , Errors errors){
+        if(errors.hasErrors()){
+            List<ObjectError> error = errors.getAllErrors();
+            throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
+        }
+        return bookService.bookUpdate(bookCreateDto);
+    }
+
 
     /**
      *  잭을 선택하여 상세정보를 확인하기 위한 용도
@@ -66,7 +76,7 @@ public class BookController {
     }
 
     /**
-     * 댓글을 추가하는 API
+     * 댓글 추가
      *
      * @param commentAddDto 댓글 정보 객체
      * @param errors
