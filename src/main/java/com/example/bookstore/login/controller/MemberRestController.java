@@ -1,5 +1,6 @@
 package com.example.bookstore.login.controller;
 
+import com.example.bookstore.login.Dto.IdCheckDto;
 import com.example.bookstore.login.Dto.JoinDto;
 import com.example.bookstore.login.Dto.LoginDto;
 import com.example.bookstore.login.entity.Member;
@@ -55,8 +56,14 @@ public class MemberRestController {
     }
 
 
+    /**
+     * 토큰을 이요한 로그인
+     * @param loginDto
+     * @param errors
+     * @return
+     */
     @PostMapping("/api/member/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto, Errors errors){
+    public ResponseEntity<?> login(@RequestBody @Valid LoginDto loginDto, Errors errors){
         if(errors.hasErrors()){
             List<ObjectError> error = errors.getAllErrors();
             throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
@@ -64,9 +71,28 @@ public class MemberRestController {
         String token = this.memberService.login(loginDto);
         return ResponseEntity.ok().body(token);
     }
-    @PostMapping("/test")
-    public ResponseEntity<?> test(Authentication authentication){
-        return ResponseEntity.ok().body(authentication.getName());
+
+    /**
+     * 중복 ID 확인
+     * @param idCheckDto 아이디 전송
+     * @param errors 입력이 안된경우 알람
+     * @return
+     */
+    @PostMapping("/api/member/idcheck")
+    public ResponseEntity<?> idCheck (@RequestBody @Valid IdCheckDto idCheckDto, Errors errors){
+        if(errors.hasErrors()){
+            List<ObjectError> error = errors.getAllErrors();
+            throw new ValidException(error.get(0).getCode(),error.get(0).getDefaultMessage());
+        }
+        if(this.memberService.idCheckDto(idCheckDto.getUserName())){
+            return ResponseEntity.badRequest().body("중복되는 ID가 있습니다.");
+        }
+        return ResponseEntity.ok().body("사용할 수 있는 ID입니다.");
     }
 
+    @PostMapping("/test")
+    public ResponseEntity<?> test(Authentication authentication){
+
+        return ResponseEntity.ok().body(memberService.test());
+    }
 }

@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -99,5 +100,26 @@ public class MemberService {
         }
         String token = JwtTokenUtil.createToken(member.getUserName(),this.tokenKey,this.expireTimeMs);
         return token;
+    }
+
+    public boolean idCheckDto(String userName) {
+        return this.memberRepository.existsByUserName(userName);
+    }
+    public boolean idPasswordCheck(String userName,String password){
+        Member member = this.memberRepository.findByUserName(userName).orElseThrow(()-> new BookUserException(UserErrorCode.USER_NOT_FOUND_ERROR));
+        if(!encoder.matches(password, member.getPassword()))
+        {
+            throw new BookUserException(UserErrorCode.USER_ID_EMAIL_FOUND_ERROR);
+        }
+        return true;
+    }
+
+
+    public List<Member> test() {
+        List<Member> memberList = memberRepository.findByUserNameContaining("4ljw");
+        if(memberList.size() == 0){
+           throw new BookUserException(UserErrorCode.USER_NOT_FOUND_ERROR);
+        }
+        return memberList;
     }
 }

@@ -16,7 +16,6 @@ public class MemberExceptionRestController {
     public MemberException bookUserIdAuthExceptionHeader(BookUserException e){
         return new MemberException(e.getErrorCode(), e.getErrorMessage());
     }
-
     @ExceptionHandler(ValidException.class)
     public ResponseError validException(ValidException e){
         return new ResponseError(e.getCode(),e.getMessage());
